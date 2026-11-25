@@ -42,7 +42,18 @@ En la app de escritorio: hacé clic en **+** al lado de la caja del prompt, desp
 
 El mod recuerda el último fondo que elegiste.
 
+## Windows Terminal
+
+En Windows, los fondos también pueden verse en Windows Terminal:
+
+```
+/fondo terminal          instala los perfiles "Claude ✎ Cálido", "Claude ☀ Atardecer", "Claude 🌲 Bosque" y "Claude 📚 Biblioteca"
+/fondo terminal quitar   los saca
+```
+
+Después de instalarlos, cerrá Windows Terminal y abrilo de nuevo. Tocá la flechita ⌄ al lado de la pestaña y elegí un perfil "Claude …": se abre Claude con los colores y el dibujo de ese fondo.
+
 ## Para tener en cuenta
 
-- Los fondos y los colores se ven solo en la app de escritorio y en la del celular. En la terminal y en VS Code solo aparece la barra de uso.
+- Los fondos y los colores de la app se ven solo en la app de escritorio y en la del celular. En la terminal y en VS Code aparece la barra de uso; en Windows Terminal, además, los perfiles de `/fondo terminal`.
 - La barra muestra el uso de las ventanas de 5 horas y de 7 días cuando usás Claude con una suscripción. Aparece después de la primera respuesta de la sesión.

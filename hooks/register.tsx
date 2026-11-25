@@ -7,6 +7,7 @@ import { SCENE as ATARDECER } from './scenes/atardecer.ts'
 import { SCENE as BIBLIOTECA } from './scenes/biblioteca.ts'
 import { SCENE as BOSQUE } from './scenes/bosque.ts'
 import { SCENE as CALIDO } from './scenes/calido.ts'
+import { fragment, TERMINAL_PROFILES } from './terminal.ts'
 
 // Each look: its colors, its still scene, and the colors of the usage bar.
 type Look = {
@@ -198,14 +199,69 @@ const tone = (pct: number): string => (pct >= 90 ? '#e5484d' : pct >= 70 ? '#e0a
 
 const WINDOWS: Record<string, string> = { five_hour: '5 h', seven_day: '7 d' }
 
-const HELP = `Fondos: ${NAMES.join(', ')}, apagado. Ejemplo: /fondo ${NAMES[0]}`
+const HELP = `Fondos: ${NAMES.join(', ')}, apagado. Ejemplo: /fondo ${NAMES[0]}. En Windows: /fondo terminal`
+
+// A Windows path from its parts, every separator a backslash.
+const BACKSLASH = String.fromCharCode(92)
+const winPath = (...parts: string[]): string => parts.join(BACKSLASH).replaceAll('/', BACKSLASH)
+
+// Runs a PowerShell line with the given variables, for what $.fs cannot do:
+// copying the PNGs (it writes text only) and removing files.
+async function powershell($: EngineInterface, script: string, env: Record<string, string>): Promise<void> {
+  const { exitCode, stderr } = await $.process.run(
+    ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script],
+    { env },
+  )
+  if (exitCode !== 0) {
+    throw new Error(stderr.trim() || `PowerShell terminó con ${exitCode}`)
+  }
+}
+
+// /fondo terminal: copies the images to the plugin's data folder and writes a
+// Windows Terminal fragment with one profile and color scheme per look.
+// /fondo terminal quitar: removes both. Windows only.
+async function terminalSetup($: EngineInterface, remove: boolean): Promise<string> {
+  const local = await $.env.get('LOCALAPPDATA')
+  if (local === undefined || local === '') {
+    return 'Esto es solo para Windows Terminal, en Windows.'
+  }
+  const fragmentDir = winPath(local, 'Microsoft', 'Windows Terminal', 'Fragments', 'claude-fondos')
+  const { CLAUDE_PLUGIN_DATA: data } = await $.process.hookEnv()
+  const imageDir = data ? winPath(data, 'terminal') : winPath(local, 'claude-fondos', 'terminal')
+
+  try {
+    if (remove) {
+      await powershell(
+        $,
+        'Remove-Item -LiteralPath $env:FONDOS_FRAGMENT, $env:FONDOS_IMAGES -Recurse -Force -ErrorAction SilentlyContinue; exit 0',
+        { FONDOS_FRAGMENT: fragmentDir, FONDOS_IMAGES: imageDir },
+      )
+      return 'Listo, saqué los perfiles "Claude …" de Windows Terminal. Cerralo y abrilo de nuevo para que desaparezcan.'
+    }
+
+    await powershell(
+      $,
+      'New-Item -ItemType Directory -Force -Path $env:FONDOS_IMAGES | Out-Null; Copy-Item -Path (Join-Path $env:FONDOS_SOURCE "*.png") -Destination $env:FONDOS_IMAGES -Force',
+      { FONDOS_SOURCE: winPath($.plugin.root, 'assets', 'terminal'), FONDOS_IMAGES: imageDir },
+    )
+    await $.fs.write(winPath(fragmentDir, 'claude-fondos.json'), fragment(imageDir))
+  } catch (error) {
+    return `No pude ${remove ? 'quitar' : 'instalar'} los perfiles de Windows Terminal: ${error instanceof Error ? error.message : String(error)}`
+  }
+
+  return [
+    `Listo, instalé ${TERMINAL_PROFILES.length} perfiles en Windows Terminal: ${TERMINAL_PROFILES.join(', ')}.`,
+    'Cerrá Windows Terminal del todo y abrilo de nuevo; después tocá la flechita ⌄ al lado de la pestaña y elegí uno. Abre Claude con ese fondo.',
+    'Para sacarlos: /fondo terminal quitar',
+  ].join(String.fromCharCode(10))
+}
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'fondo',
       description: 'Cambia el fondo y el tema (o lo apaga)',
-      argumentHint: `[${[...NAMES, 'apagado'].join('|')}]`,
+      argumentHint: `[${[...NAMES, 'apagado', 'terminal'].join('|')}]`,
     })
 
     const stored = await $.store.get('look')
@@ -235,6 +291,9 @@ export const register: Register = on => {
     if (wanted === '') {
       const now = await read($, current)
       return { text: `Fondo actual: ${now}. ${HELP}` }
+    }
+    if (wanted === 'terminal' || wanted === 'terminal quitar') {
+      return { text: await terminalSetup($, wanted === 'terminal quitar') }
     }
     if (!isLookName(wanted)) {
       return { text: `No conozco el fondo "${wanted}". ${HELP}` }

@@ -1,7 +1,7 @@
 {
   "name": "fondos",
-  "version": "0.1.1",
-  "description": "Fondos de pixel art estáticos para Claude Code Desktop (cálido, atardecer retro, bosque nocturno, biblioteca) con /fondo para cambiarlos, y una barra del uso de Claude sobre el prompt",
+  "version": "0.2.0",
+  "description": "Fondos de pixel art estáticos para Claude Code Desktop (cálido, atardecer retro, bosque nocturno, biblioteca) con /fondo para cambiarlos, perfiles para Windows Terminal con /fondo terminal, y una barra del uso de Claude sobre el prompt",
   "author": { "name": "Geronimo-Bassi" },
   "types": "./types/index.d.ts"
 }

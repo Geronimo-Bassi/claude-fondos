@@ -10,6 +10,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
       return <Box key="engine-band" />
     })
     on('ui.log', () => ({ value: {} }) as never)
+    // Off Windows there is no LOCALAPPDATA: /fondo terminal says so and touches nothing.
+    on('env.get', () => ({ value: undefined }) as never)
 
     const band = {
       plugin: 'fondos',
@@ -30,6 +32,9 @@ for (const surface of ['terminal', 'desktop'] as const) {
 
     const unknown = await $.command.run({ command: 'fondo', args: 'selva' } as never)
     expect(JSON.stringify(unknown)).toContain('No conozco')
+
+    const terminal = await $.command.run({ command: 'fondo', args: 'terminal quitar' } as never)
+    expect(JSON.stringify(terminal)).toContain('Windows')
 
     const off = await $.command.run({ command: 'fondo', args: 'apagado' } as never)
     expect(JSON.stringify(off)).toContain('apagados')
