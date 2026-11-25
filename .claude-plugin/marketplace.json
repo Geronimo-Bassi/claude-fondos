@@ -1,0 +1,6 @@
+{
+  "name": "claude-fondos",
+  "owner": { "name": "Geronimo-Bassi" },
+  "metadata": { "description": "Fondos de pixel art estáticos para Claude Code Desktop" },
+  "plugins": [{ "name": "fondos", "source": "./" }]
+}
