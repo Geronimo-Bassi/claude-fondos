@@ -151,6 +151,10 @@ const current = atom({ plugin: 'fondos', key: 'look' } as const, 'calido' as Loo
 const isLookName = (value: unknown): value is LookName =>
   value === 'apagado' || (typeof value === 'string' && value in LOOKS)
 
+// Themes are drawn by the desktop and mobile apps only. In a terminal the
+// theme draws nothing, and an older Claude Code has no `$.theme` at all (a
+// TypeError here); the usage bar is all the mod shows there, so both stay
+// quiet. Anything else is a real failure and is logged.
 async function applyLook($: EngineInterface, name: LookName): Promise<void> {
   try {
     if (name === 'apagado') {
@@ -166,12 +170,11 @@ async function applyLook($: EngineInterface, name: LookName): Promise<void> {
       colors: look.colors.theme,
       backdrop: { scene: name, glass: { blur: 10, opacity: 0.6 } },
     }
-    const set = await $.theme.set(args)
-    if (!set.isDrawn) {
-      $.ui.log(`fondos: el tema no se dibuja aquí (${set.reason})`)
-    }
+    await $.theme.set(args)
   } catch (error) {
-    $.ui.log(`fondos: no se pudo cambiar el tema (${String(error)})`)
+    if (!(error instanceof TypeError)) {
+      $.ui.log(`fondos: no se pudo cambiar el tema (${String(error)})`)
+    }
   }
 }
 
